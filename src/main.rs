@@ -1,9 +1,10 @@
 use crossterm::{
-    event::{self, EnableMouseCapture},
+    event::{self, DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use git2::{Commit, ObjectType, Repository};
+use std::env;
 use std::{io, thread, time};
 use tui::{
     backend::CrosstermBackend,
@@ -12,7 +13,10 @@ use tui::{
 };
 
 fn main() {
-    let repo = match Repository::init("/home/syien/rust/gterm") {
+    let mut args = env::args();
+    args.next();
+    let path = args.next().expect("ERROR: please enter path to a folder");
+    let repo = match Repository::init(path) {
         Ok(repo) => repo,
         Err(e) => panic!("ERROR loading repository: {e}"),
     };
@@ -26,9 +30,9 @@ fn main() {
             f.render_widget(block, size);
         })
         .unwrap();
-    // display_last_commit(&repo).unwrap();
+    display_last_commit(&repo).unwrap();
     thread::sleep(time::Duration::from_millis(5000));
-    execute!(io::stdout(), LeaveAlternateScreen);
+    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture);
 }
 
 fn find_last_commit(repo: &Repository) -> Result<Commit, git2::Error> {
