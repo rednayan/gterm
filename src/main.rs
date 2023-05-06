@@ -5,7 +5,11 @@ use crossterm::{
 };
 use git2::{Commit, ObjectType, Repository};
 use std::{io, thread, time};
-use tui::{backend::CrosstermBackend, Terminal};
+use tui::{
+    backend::CrosstermBackend,
+    widgets::{Block, Borders},
+    Terminal,
+};
 
 fn main() {
     let repo = match Repository::init("/home/syien/rust/gterm") {
@@ -15,7 +19,14 @@ fn main() {
     let backend = CrosstermBackend::new(io::stdout());
     execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture).unwrap();
     let mut terminal = Terminal::new(backend).unwrap();
-    display_last_commit(&repo).unwrap();
+    terminal
+        .draw(|f| {
+            let size = f.size();
+            let block = Block::default().title("Block").borders(Borders::ALL);
+            f.render_widget(block, size);
+        })
+        .unwrap();
+    // display_last_commit(&repo).unwrap();
     thread::sleep(time::Duration::from_millis(5000));
     execute!(io::stdout(), LeaveAlternateScreen);
 }
