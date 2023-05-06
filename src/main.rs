@@ -1,12 +1,22 @@
+use crossterm::{
+    event::{self, EnableMouseCapture},
+    execute,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
+};
 use git2::{Commit, ObjectType, Repository};
+use std::{io, thread, time};
+use tui::{backend::CrosstermBackend, Terminal};
 
 fn main() {
     let repo = match Repository::init("/home/syien/rust/gterm") {
         Ok(repo) => repo,
         Err(e) => panic!("ERROR loading repository: {e}"),
     };
-
-    display_last_commit(&repo);
+    let backend = CrosstermBackend::new(io::stdout());
+    execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture).unwrap();
+    let mut terminal = Terminal::new(backend).unwrap();
+    thread::sleep(time::Duration::from_millis(5000));
+    execute!(io::stdout(), LeaveAlternateScreen);
 }
 
 fn find_last_commit(repo: &Repository) -> Result<Commit, git2::Error> {
