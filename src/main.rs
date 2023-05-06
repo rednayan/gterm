@@ -15,6 +15,7 @@ fn main() {
     let backend = CrosstermBackend::new(io::stdout());
     execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture).unwrap();
     let mut terminal = Terminal::new(backend).unwrap();
+    display_last_commit(&repo).unwrap();
     thread::sleep(time::Duration::from_millis(5000));
     execute!(io::stdout(), LeaveAlternateScreen);
 }
