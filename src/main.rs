@@ -1,5 +1,5 @@
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -32,7 +32,7 @@ fn main() {
         .unwrap();
     display_last_commit(&repo).unwrap();
     thread::sleep(time::Duration::from_millis(5000));
-    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture);
+    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).unwrap();
 }
 
 fn find_last_commit(repo: &Repository) -> Result<Commit, git2::Error> {
@@ -42,7 +42,7 @@ fn find_last_commit(repo: &Repository) -> Result<Commit, git2::Error> {
 }
 
 fn display_last_commit(repo: &Repository) -> Result<(), git2::Error> {
-    let commit = find_last_commit(repo).expect("ERROR:Could not find last commit");
+    let commit = find_last_commit(repo).expect("ERROR: cannot retrieve last commit");
     let timestamp = commit.time().seconds();
     Ok(println!(
         "commit_id: {commit_id}\ncommit_author: {commit_author}\ntimestamp: {timestamp}\ncommit_message: {commit_message}",
