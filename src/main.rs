@@ -27,9 +27,8 @@ fn main() {
     for oid in revwalk {
         let commit_oid = oid.unwrap();
         let commit = repo.find_commit(commit_oid).unwrap();
-        println!("{commit:?}");
+        display_commits(&commit).unwrap();
     }
-    display_last_commit(&repo).unwrap();
 
     let backend = CrosstermBackend::new(io::stdout());
     execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture).unwrap();
@@ -45,14 +44,7 @@ fn main() {
     execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).unwrap();
 }
 
-fn find_last_commit(repo: &Repository) -> Result<Commit, git2::Error> {
-    let obj = repo.head()?.resolve()?.peel(ObjectType::Commit)?;
-    let commit = obj.into_commit().unwrap();
-    return Ok(commit);
-}
-
-fn display_last_commit(repo: &Repository) -> Result<(), git2::Error> {
-    let commit = find_last_commit(repo).expect("ERROR: cannot retrieve last commit");
+fn display_commits(commit: &Commit) -> Result<(), git2::Error> {
     let timestamp = commit.time().seconds();
     Ok(println!(
         "commit_id: {commit_id}\ncommit_author: {commit_author}\ntimestamp: {timestamp}\ncommit_message: {commit_message}",
