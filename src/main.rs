@@ -20,6 +20,17 @@ fn main() {
         Ok(repo) => repo,
         Err(e) => panic!("ERROR loading repository: {e}"),
     };
+
+    let mut revwalk = repo.revwalk().unwrap();
+    revwalk.push_head().unwrap();
+
+    for oid in revwalk {
+        let commit_oid = oid.unwrap();
+        let commit = repo.find_commit(commit_oid).unwrap();
+        println!("{commit:?}");
+    }
+    display_last_commit(&repo).unwrap();
+
     let backend = CrosstermBackend::new(io::stdout());
     execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture).unwrap();
     let mut terminal = Terminal::new(backend).unwrap();
@@ -30,7 +41,6 @@ fn main() {
             f.render_widget(block, size);
         })
         .unwrap();
-    display_last_commit(&repo).unwrap();
     thread::sleep(time::Duration::from_millis(5000));
     execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).unwrap();
 }
