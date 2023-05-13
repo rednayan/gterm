@@ -9,6 +9,36 @@ use std::{env, io};
 use tui::{backend::CrosstermBackend, Terminal};
 mod ui;
 
+pub struct AppData {
+    pub titles: Vec<String>,
+    pub index: usize,
+}
+
+impl AppData {
+    fn new() -> Self {
+        AppData {
+            titles: vec![
+                "commit logs".to_string(),
+                "TBD".to_string(),
+                "TBD".to_string(),
+            ],
+            index: 0,
+        }
+    }
+
+    pub fn next(&mut self) {
+        self.index = (self.index + 1) % self.titles.len();
+    }
+
+    pub fn previous(&mut self) {
+        if self.index > 0 {
+            self.index -= 1;
+        } else {
+            self.index = self.titles.len() - 1;
+        }
+    }
+}
+
 fn main() -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -24,7 +54,11 @@ fn main() -> Result<()> {
         Ok(repo) => repo,
         Err(e) => panic!("ERROR loading repository: {e}"),
     };
-    commit_logs(&repo);
+
+    let appdata = AppData::new();
+    ui::run_app(&mut terminal, appdata)?;
+
+    // commit_logs(&repo);
 
     disable_raw_mode()?;
     execute!(
