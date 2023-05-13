@@ -54,11 +54,10 @@ fn main() -> Result<()> {
         Ok(repo) => repo,
         Err(e) => panic!("ERROR loading repository: {e}"),
     };
+    let commit_logs = commit_logs(&repo)?;
 
     let appdata = AppData::new();
-    ui::run_app(&mut terminal, appdata)?;
-
-    // commit_logs(&repo);
+    ui::run_app(&mut terminal, appdata, commit_logs)?;
 
     disable_raw_mode()?;
     execute!(
@@ -71,27 +70,15 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn commit_logs(repo: &Repository) {
+fn commit_logs(repo: &Repository) -> Result<Vec<Commit>> {
+    let mut commit_vec: Vec<Commit> = Vec::new();
     let mut revwalk = repo.revwalk().unwrap();
     revwalk.push_head().unwrap();
 
     for oid in revwalk {
         let commit_oid = oid.unwrap();
         let commit = repo.find_commit(commit_oid).unwrap();
-        display_commits(&commit).unwrap();
+        commit_vec.push(commit);
     }
-}
-
-fn display_commits(commit: &Commit) -> Result<(), git2::Error> {
-    let timestamp = commit.time().seconds();
-    Ok(println!(
-        "commit_id: {commit_id}
-        \ncommit_author: {commit_author}
-        \ntimestamp: {timestamp}
-        \ncommit_message: {commit_message}
-       ",
-        commit_id = commit.id(),
-        commit_author = commit.author(),
-        commit_message = commit.message().unwrap(),
-    ))
+    Ok(commit_vec)
 }

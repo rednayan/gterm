@@ -1,19 +1,24 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode};
+use git2::Commit;
 use tui::{
     backend::Backend,
     layout::{Constraint, Layout},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, Tabs},
+    widgets::{Block, Borders, Paragraph, Tabs},
     Frame, Terminal,
 };
 
 use crate::AppData;
 
-pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut appdata: AppData) -> Result<()> {
+pub fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    mut appdata: AppData,
+    commit_logs: Vec<Commit>,
+) -> Result<()> {
     loop {
-        terminal.draw(|f| ui(f, &appdata))?;
+        terminal.draw(|f| ui(f, &appdata, commit_logs.clone()))?;
         if let Event::Key(key) = event::read()? {
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
@@ -25,13 +30,14 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut appdata: AppData) -> 
     }
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>, appdata: &AppData) {
+fn ui<B: Backend>(f: &mut Frame<B>, appdata: &AppData, commit_logs: Vec<Commit>) {
     let terminal_size = f.size();
     let chunks = Layout::default()
         .direction(tui::layout::Direction::Vertical)
         .margin(5)
         .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
         .split(terminal_size);
+
     let blocks = Block::default().style(
         Style::default()
             .bg(tui::style::Color::Black)
@@ -49,6 +55,10 @@ fn ui<B: Backend>(f: &mut Frame<B>, appdata: &AppData) {
             ])
         })
         .collect();
+
+    let commit = commit_logs.iter().map(|f| {
+        Span::styled(f.author().to_string(), Style::default().fg(Color::Magenta));
+    });
 
     let tabs = Tabs::new(titles)
         .block(Block::default().borders(Borders::ALL).title("Tabs"))
@@ -69,4 +79,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, appdata: &AppData) {
         _ => unreachable!(),
     };
     f.render_widget(inner, chunks[1]);
+    let paragraph = Paragraph::new(vec![Spans::from("this is a para")])
+        .style(Style::default().bg(Color::White).fg(Color::Black))
+        .alignment(tui::layout::Alignment::Left);
+
+    f.render_widget(paragraph, chunks[0]);
 }
