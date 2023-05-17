@@ -6,7 +6,7 @@ use tui::{
     layout::{Constraint, Layout},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, Paragraph, Tabs},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Tabs, Wrap},
     Frame, Terminal,
 };
 
@@ -34,7 +34,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, appdata: &AppData, commit_logs: Vec<Commit>)
     let terminal_size = f.size();
     let chunks = Layout::default()
         .direction(tui::layout::Direction::Vertical)
-        .margin(5)
+        .margin(3)
         .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
         .split(terminal_size);
 
@@ -44,6 +44,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, appdata: &AppData, commit_logs: Vec<Commit>)
             .fg(tui::style::Color::White),
     );
     f.render_widget(blocks, terminal_size);
+
     let titles = appdata
         .titles
         .iter()
@@ -56,10 +57,6 @@ fn ui<B: Backend>(f: &mut Frame<B>, appdata: &AppData, commit_logs: Vec<Commit>)
         })
         .collect();
 
-    let commit = commit_logs.iter().map(|f| {
-        Span::styled(f.author().to_string(), Style::default().fg(Color::Magenta));
-    });
-
     let tabs = Tabs::new(titles)
         .block(Block::default().borders(Borders::ALL).title("Tabs"))
         .select(appdata.index)
@@ -71,17 +68,32 @@ fn ui<B: Backend>(f: &mut Frame<B>, appdata: &AppData, commit_logs: Vec<Commit>)
         );
     f.render_widget(tabs, terminal_size);
 
+    let _commit_chunk = Layout::default()
+        .direction(tui::layout::Direction::Vertical)
+        .margin(3)
+        .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+        .split(chunks[1]);
+
+    let commit_author: Vec<ListItem> = commit_logs
+        .iter()
+        .map(|f| {
+            // return Span::styled(f.author().to_string(), Style::default().fg(Color::Magenta));
+            return ListItem::new(f.author().to_string());
+        })
+        .collect();
+
     let inner = match appdata.index {
-        0 => Block::default().title("logs").borders(Borders::ALL),
-        1 => Block::default().title("Inner 1").borders(Borders::ALL),
-        2 => Block::default().title("Inner 2").borders(Borders::ALL),
-        3 => Block::default().title("Inner 3").borders(Borders::ALL),
+        0 => List::new(commit_author.clone())
+            .block(Block::default().title("Commit List").borders(Borders::ALL))
+            .style(Style::default().fg(Color::White))
+            .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+            .highlight_symbol(">>"),
         _ => unreachable!(),
     };
     f.render_widget(inner, chunks[1]);
-    let paragraph = Paragraph::new(vec![Spans::from("this is a para")])
-        .style(Style::default().bg(Color::White).fg(Color::Black))
-        .alignment(tui::layout::Alignment::Left);
 
-    f.render_widget(paragraph, chunks[0]);
+    // let _paragraph = Paragraph::new(vec![Spans::from(commit_author)])
+    //     .style(Style::default().bg(Color::Black).fg(Color::White))
+    //     .alignment(tui::layout::Alignment::Left)
+    //     .wrap(Wrap { trim: true });
 }

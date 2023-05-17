@@ -5,7 +5,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use git2::{Commit, Repository};
-use std::{env, io};
+use std::env;
 use tui::{backend::CrosstermBackend, Terminal};
 mod ui;
 
@@ -41,7 +41,7 @@ impl AppData {
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
-    let mut stdout = io::stdout();
+    let mut stdout = std::io::stdout();
 
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
