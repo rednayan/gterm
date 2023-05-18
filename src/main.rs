@@ -6,16 +6,67 @@ use crossterm::{
 };
 use git2::{Commit, Repository};
 use std::env;
-use tui::{backend::CrosstermBackend, Terminal};
+use tui::{
+    backend::CrosstermBackend,
+    widgets::{ListItem, ListState},
+    Terminal,
+};
 mod ui;
 
-pub struct AppData {
-    pub titles: Vec<String>,
-    pub index: usize,
+pub struct StatefulList<T> {
+    state: ListState,
+    items: Vec<T>,
 }
 
-impl AppData {
-    fn new() -> Self {
+impl<T> StatefulList<T> {
+    fn with_items(items: Vec<T>) -> StatefulList<T> {
+        StatefulList {
+            state: ListState::default(),
+            items,
+        }
+    }
+
+    fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    fn unselect(&mut self) {
+        self.state.select(None);
+    }
+}
+
+pub struct AppData<'a> {
+    pub titles: Vec<String>,
+    pub index: usize,
+    pub items: StatefulList<Commit<'a>>,
+}
+
+impl<'a> AppData<'a> {
+    fn new(items: StatefulList<Commit<'a>>) -> Self {
         AppData {
             titles: vec![
                 "commit logs".to_string(),
@@ -23,6 +74,7 @@ impl AppData {
                 "TBD".to_string(),
             ],
             index: 0,
+            items,
         }
     }
 
@@ -54,10 +106,12 @@ fn main() -> Result<()> {
         Ok(repo) => repo,
         Err(e) => panic!("ERROR loading repository: {e}"),
     };
-    let commit_logs = commit_logs(&repo)?;
+    let commit_logs: Vec<Commit> = commit_logs(&repo)?;
 
-    let appdata = AppData::new();
-    ui::run_app(&mut terminal, appdata, commit_logs)?;
+    let stateful_commit = StatefulList::with_items(commit_logs.clone());
+
+    let appdata = AppData::new(stateful_commit);
+    ui::run_app(&mut terminal, appdata)?;
 
     disable_raw_mode()?;
     execute!(

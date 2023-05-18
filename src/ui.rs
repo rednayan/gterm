@@ -6,19 +6,15 @@ use tui::{
     layout::{Constraint, Layout},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Tabs, Wrap},
+    widgets::{Block, Borders, List, ListItem, ListState, Tabs},
     Frame, Terminal,
 };
 
 use crate::AppData;
 
-pub fn run_app<B: Backend>(
-    terminal: &mut Terminal<B>,
-    mut appdata: AppData,
-    commit_logs: Vec<Commit>,
-) -> Result<()> {
+pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut appdata: AppData) -> Result<()> {
     loop {
-        terminal.draw(|f| ui(f, &appdata, commit_logs.clone()))?;
+        terminal.draw(|f| ui(f, &mut appdata))?;
         if let Event::Key(key) = event::read()? {
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
@@ -30,7 +26,7 @@ pub fn run_app<B: Backend>(
     }
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>, appdata: &AppData, commit_logs: Vec<Commit>) {
+fn ui<B: Backend>(f: &mut Frame<B>, appdata: &mut AppData) {
     let terminal_size = f.size();
     let chunks = Layout::default()
         .direction(tui::layout::Direction::Vertical)
@@ -68,32 +64,26 @@ fn ui<B: Backend>(f: &mut Frame<B>, appdata: &AppData, commit_logs: Vec<Commit>)
         );
     f.render_widget(tabs, terminal_size);
 
-    let _commit_chunk = Layout::default()
-        .direction(tui::layout::Direction::Vertical)
-        .margin(3)
-        .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
-        .split(chunks[1]);
-
-    let commit_author: Vec<ListItem> = commit_logs
+    let commit_author: Vec<ListItem> = appdata
+        .items
+        .items
         .iter()
         .map(|f| {
-            // return Span::styled(f.author().to_string(), Style::default().fg(Color::Magenta));
             return ListItem::new(f.author().to_string());
         })
         .collect();
 
     let inner = match appdata.index {
-        0 => List::new(commit_author.clone())
-            .block(Block::default().title("Commit List").borders(Borders::ALL))
-            .style(Style::default().fg(Color::White))
-            .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-            .highlight_symbol(">>"),
+        0 => list_block(commit_author.clone()),
         _ => unreachable!(),
     };
-    f.render_widget(inner, chunks[1]);
+    f.render_stateful_widget(inner, chunks[1], &mut appdata.items.state);
+}
 
-    // let _paragraph = Paragraph::new(vec![Spans::from(commit_author)])
-    //     .style(Style::default().bg(Color::Black).fg(Color::White))
-    //     .alignment(tui::layout::Alignment::Left)
-    //     .wrap(Wrap { trim: true });
+fn list_block(commit_author: Vec<ListItem>) -> List {
+    List::new(commit_author.clone())
+        .block(Block::default().title("Commit List").borders(Borders::ALL))
+        .style(Style::default().fg(Color::White))
+        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+        .highlight_symbol(">>")
 }
